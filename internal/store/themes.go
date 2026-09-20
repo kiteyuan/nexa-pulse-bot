@@ -19,7 +19,7 @@ func uniqueViolation(err error) bool {
 }
 
 func (s *Store) ListThemes(ctx context.Context) ([]kernel.Theme, error) {
-	rows, err := s.pool.Query(ctx, `SELECT id, name, slug FROM themes ORDER BY id`)
+	rows, err := s.pool.Query(ctx, `SELECT id, name, slug, sort_order FROM themes ORDER BY sort_order, id`)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func (s *Store) ListThemes(ctx context.Context) ([]kernel.Theme, error) {
 	var out []kernel.Theme
 	for rows.Next() {
 		var t kernel.Theme
-		if err := rows.Scan(&t.ID, &t.Name, &t.Slug); err != nil {
+		if err := rows.Scan(&t.ID, &t.Name, &t.Slug, &t.SortOrder); err != nil {
 			return nil, err
 		}
 		out = append(out, t)
@@ -53,9 +53,10 @@ func (s *Store) CreateTheme(ctx context.Context, name string) (kernel.Theme, err
 	defer func() { _ = tx.Rollback(ctx) }()
 	var t kernel.Theme
 	err = tx.QueryRow(ctx, `
-		INSERT INTO themes(name, slug) VALUES ($1, $2)
-		RETURNING id, name, slug`, name, fmt.Sprintf("tmp-%d", time.Now().UnixNano())).
-		Scan(&t.ID, &t.Name, &t.Slug)
+		INSERT INTO themes(name, slug, sort_order)
+		VALUES ($1, $2, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM themes))
+		RETURNING id, name, slug, sort_order`, name, fmt.Sprintf("tmp-%d", time.Now().UnixNano())).
+		Scan(&t.ID, &t.Name, &t.Slug, &t.SortOrder)
 	if uniqueViolation(err) {
 		return kernel.Theme{}, fmt.Errorf("%w: 栏目已存在", kernel.ErrConflict)
 	}
@@ -141,6 +142,64 @@ func (s *Store) DeleteTheme(ctx context.Context, id int64) error {
 		return kernel.ErrNotFound
 	}
 	return nil
+}
+
+func (s *Store) MoveTheme(ctx context.Context, id int64, dir int) error {
+	if dir != -1 && dir != 1 {
+		return fmt.Errorf("%w: 无效方向", kernel.ErrInvalid)
+	}
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	rows, err := tx.Query(ctx, `SELECT id FROM themes ORDER BY sort_order, id FOR UPDATE`)
+	if err != nil {
+		return err
+	}
+	var ids []int64
+	for rows.Next() {
+		var themeID int64
+		if err := rows.Scan(&themeID); err != nil {
+			rows.Close()
+			return err
+		}
+		ids = append(ids, themeID)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	rows.Close()
+
+	at := -1
+	for i, themeID := range ids {
+		if themeID == id {
+			at = i
+			break
+		}
+	}
+	if at < 0 {
+		return kernel.ErrNotFound
+	}
+	to := at + dir
+	if to < 0 || to >= len(ids) {
+		return nil
+	}
+	ids[at], ids[to] = ids[to], ids[at]
+	order := make([]int32, len(ids))
+	for i := range ids {
+		order[i] = int32(i + 1)
+	}
+	if _, err := tx.Exec(ctx, `
+		UPDATE themes AS t
+		SET sort_order = u.ord
+		FROM unnest($1::bigint[], $2::int[]) AS u(id, ord)
+		WHERE t.id = u.id`, ids, order); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func (s *Store) BindThemeSource(ctx context.Context, themeID int64, kind string, sourceID int64) error {

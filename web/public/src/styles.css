@@ -61,6 +61,39 @@ button { cursor: pointer; }
   letter-spacing: -0.02em;
   font-weight: 700;
 }
+.home-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+.brand-mark {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: block;
+  flex-shrink: 0;
+}
+.repo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+.repo svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  display: block;
+}
+.repo:hover { color: var(--accent); }
 .hero p {
   margin: 0.35rem 0 0;
   color: var(--mute);
@@ -93,12 +126,38 @@ button { cursor: pointer; }
   margin: 0 0 1.5rem;
 }
 
-/* —— 首页：热榜多列错落 —— */
-.hot-fall {
+.loading {
+  min-height: 100vh;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  place-items: center;
+}
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; border-top-color: var(--accent); }
+}
+
+/* —— 首页：按最短列排布，短卡片下面直接接下一张 —— */
+.hot-fall {
+  display: flex;
+  align-items: flex-start;
   gap: 1rem;
-  align-items: start;
+}
+.hot-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 .hot {
   min-width: 0;
@@ -260,12 +319,14 @@ button { cursor: pointer; }
   place-items: center;
   padding: 1.2rem;
   z-index: 20;
-  overflow: auto;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 .sheet {
   width: min(640px, 100%);
-  max-height: min(88vh, 900px);
+  max-height: min(88vh, 900px, calc(100dvh - 2.4rem));
   overflow: auto;
+  overscroll-behavior: contain;
   background: var(--paper);
   border-radius: 12px;
   padding: 1.1rem 1.2rem 1.5rem;
@@ -324,10 +385,8 @@ button { cursor: pointer; }
 
 @media (max-width: 900px) {
   .fall { column-count: 2; }
-  .hot-fall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
   .page { padding: 1.25rem 1rem 3rem; }
   .fall { column-count: 1; }
-  .hot-fall { grid-template-columns: 1fr; }
 }

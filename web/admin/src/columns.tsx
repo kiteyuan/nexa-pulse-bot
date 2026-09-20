@@ -73,11 +73,31 @@ export function ColumnsDesk() {
       .catch((e: Error) => toast(e.message, "err"));
   };
 
+  const index = themes.findIndex((t) => t.id === id);
+  const moveTheme = (dir: "up" | "down") => {
+    if (!theme) {
+      return;
+    }
+    api(`/api/themes/${theme.id}/move`, { method: "POST", body: JSON.stringify({ dir }) })
+      .then(() => load())
+      .catch((e: Error) => toast(e.message, "err"));
+  };
+
   return (
     <Desk
       title="栏目"
       actions={
         <>
+          {theme && themes.length > 1 && (
+            <>
+              <IconBtn label="在用户端提前" disabled={index <= 0} onClick={() => moveTheme("up")}>
+                <Icon name="up" />
+              </IconBtn>
+              <IconBtn label="在用户端靠后" disabled={index < 0 || index >= themes.length - 1} onClick={() => moveTheme("down")}>
+                <Icon name="down" />
+              </IconBtn>
+            </>
+          )}
           {theme && themes.length > 1 && (
             <Menu label={<span className="menu-label">{theme.name}</span>}>
               {(close) =>

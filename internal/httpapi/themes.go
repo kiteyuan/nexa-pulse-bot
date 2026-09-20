@@ -70,6 +70,36 @@ func (s *Server) patchTheme(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, theme)
 }
 
+func (s *Server) moveTheme(w http.ResponseWriter, r *http.Request) {
+	id, err := pathID(r, "id")
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, "无效 id")
+		return
+	}
+	var body struct {
+		Dir string `json:"dir"`
+	}
+	if err := readJSON(w, r, &body); err != nil {
+		writeErr(w, http.StatusBadRequest, "无效 JSON")
+		return
+	}
+	dir := 0
+	switch body.Dir {
+	case "up":
+		dir = -1
+	case "down":
+		dir = 1
+	default:
+		writeErr(w, http.StatusBadRequest, "无效方向")
+		return
+	}
+	if err := s.Themes.MoveTheme(r.Context(), id, dir); err != nil {
+		s.writeCatalogErr(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
 func (s *Server) deleteTheme(w http.ResponseWriter, r *http.Request) {
 	id, err := pathID(r, "id")
 	if err != nil {

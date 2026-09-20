@@ -30,6 +30,7 @@ type Themes interface {
 	ListThemes(ctx context.Context) ([]kernel.Theme, error)
 	CreateTheme(ctx context.Context, name string) (kernel.Theme, error)
 	UpdateTheme(ctx context.Context, id int64, name string) (kernel.Theme, error)
+	MoveTheme(ctx context.Context, id int64, dir int) error
 	DeleteTheme(ctx context.Context, id int64) error
 	BindThemeSource(ctx context.Context, themeID int64, kind string, sourceID int64) error
 	UnbindThemeSource(ctx context.Context, themeID int64, kind string, sourceID int64) error

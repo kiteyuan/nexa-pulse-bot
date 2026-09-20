@@ -112,7 +112,8 @@ input:disabled { opacity: 0.45; }
 .btn.ghost { background: var(--field); color: var(--ink); }
 .btn.ghost:hover { background: var(--active); }
 .btn.danger { background: var(--bad); color: #fff; }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:disabled,
+.icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 a.btn { text-decoration: none; }
 .btn kbd {
   margin-left: 2px;
@@ -134,6 +135,7 @@ a.btn { text-decoration: none; }
   padding: 0;
 }
 .icon-btn:hover { background: var(--hover); color: var(--ink); }
+.icon-btn:disabled:hover { background: transparent; color: var(--mute); }
 .icon-btn.danger:hover { background: rgba(180, 35, 24, 0.1); color: var(--bad); }
 
 .search {

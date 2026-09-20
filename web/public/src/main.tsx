@@ -184,13 +184,21 @@ function App() {
     return buildSections(themes, items, THEME_PER).find((s) => s.key === route.slug) ?? null;
   }, [route, themes, items]);
 
-  if (loading || err) {
+  if (loading) {
+    return (
+      <div className="loading" role="status" aria-label="加载中">
+        <span className="spinner" />
+      </div>
+    );
+  }
+
+  if (err) {
     return (
       <div className="page">
         <header className="hero">
           <h1>NexaPulse</h1>
         </header>
-        <p className="banner">{loading ? "加载中…" : err}</p>
+        <p className="banner">{err}</p>
       </div>
     );
   }
@@ -212,19 +220,74 @@ function App() {
   );
 }
 
+function hotColumnCount() {
+  if (window.innerWidth <= 560) {
+    return 1;
+  }
+  if (window.innerWidth <= 900) {
+    return 2;
+  }
+  return 3;
+}
+
+/** 列表最高约 8 行，用来把下一张卡片放进当前最短的列。 */
+function packColumns(sections: Section[], cols: number): Section[][] {
+  const buckets: Section[][] = Array.from({ length: cols }, () => []);
+  const height = Array(cols).fill(0);
+  for (const sec of sections) {
+    let at = 0;
+    for (let i = 1; i < cols; i++) {
+      if (height[i] < height[at]) {
+        at = i;
+      }
+    }
+    buckets[at].push(sec);
+    height[at] += 1 + Math.min(sec.items.length, 8);
+  }
+  return buckets;
+}
+
 function HomePage({ sections, onOpen }: { sections: Section[]; onOpen: (item: Item) => void }) {
+  const [cols, setCols] = useState(hotColumnCount);
+  useEffect(() => {
+    const apply = () => setCols(hotColumnCount());
+    window.addEventListener("resize", apply);
+    return () => window.removeEventListener("resize", apply);
+  }, []);
+  const columns = useMemo(() => packColumns(sections, cols), [sections, cols]);
+
   return (
     <div className="page home">
-      <header className="hero">
-        <h1>NexaPulse</h1>
-        <p>各栏目精选速览</p>
+      <header className="hero home-hero">
+        <div className="brand">
+          <img className="brand-mark" src="/icon.png" alt="" width={40} height={40} />
+          <h1>NexaPulse</h1>
+        </div>
+        <a
+          className="repo"
+          href="https://github.com/kiteyuan/nexa-pulse-bot"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="GitHub"
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+            />
+          </svg>
+        </a>
       </header>
 
       {sections.length === 0 && <p className="banner">还没有内容</p>}
 
       <div className="hot-fall">
-        {sections.map((sec) => (
-          <HotPanel key={sec.key} section={sec} onOpen={onOpen} />
+        {columns.map((col, i) => (
+          <div className="hot-col" key={i}>
+            {col.map((sec) => (
+              <HotPanel key={sec.key} section={sec} onOpen={onOpen} />
+            ))}
+          </div>
         ))}
       </div>
     </div>
@@ -369,6 +432,56 @@ function Card({ item, onOpen }: { item: Item; onOpen: () => void }) {
 }
 
 function Detail({ item, onClose }: { item: Item; onClose: () => void }) {
+  useEffect(() => {
+    const y = window.scrollY;
+    const { body, documentElement: html } = document;
+    const prev = {
+      overflow: body.style.overflow,
+      htmlOverflow: html.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+    };
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${y}px`;
+    body.style.width = "100%";
+
+    const sheetCanScroll = (e: Event) => {
+      const sheet = document.querySelector(".sheet");
+      if (!(sheet instanceof HTMLElement) || !sheet.contains(e.target as Node)) {
+        return false;
+      }
+      if (!(e instanceof WheelEvent) || e.deltaY === 0) {
+        return e instanceof TouchEvent;
+      }
+      const max = sheet.scrollHeight - sheet.clientHeight;
+      if (e.deltaY < 0) {
+        return sheet.scrollTop > 0;
+      }
+      return sheet.scrollTop < max - 1;
+    };
+    const blockBackgroundScroll = (e: Event) => {
+      if (!sheetCanScroll(e)) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener("wheel", blockBackgroundScroll, { capture: true, passive: false });
+    document.addEventListener("touchmove", blockBackgroundScroll, { capture: true, passive: false });
+
+    return () => {
+      document.removeEventListener("wheel", blockBackgroundScroll, { capture: true });
+      document.removeEventListener("touchmove", blockBackgroundScroll, { capture: true });
+      body.style.overflow = prev.overflow;
+      html.style.overflow = prev.htmlOverflow;
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.width = prev.width;
+      window.scrollTo(0, y);
+    };
+  }, []);
+
   return (
     <div className="veil" role="presentation" onClick={onClose}>
       <article className="sheet" role="dialog" aria-label={item.title} onClick={(e) => e.stopPropagation()}>

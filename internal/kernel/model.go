@@ -79,10 +79,11 @@ type InboxCounts struct {
 }
 
 type Theme struct {
-	ID      int64         `json:"id"`
-	Name    string        `json:"name"`
-	Slug    string        `json:"slug"`
-	Sources []ThemeSource `json:"sources,omitempty"`
+	ID        int64         `json:"id"`
+	Name      string        `json:"name"`
+	Slug      string        `json:"slug"`
+	SortOrder int           `json:"sort_order,omitempty"`
+	Sources   []ThemeSource `json:"sources,omitempty"`
 }
 
 type ThemeSource struct {

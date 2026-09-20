@@ -67,6 +67,7 @@ func (s *Server) AdminHandler() http.Handler {
 	protected.HandleFunc("GET /api/themes", s.listThemes)
 	protected.HandleFunc("POST /api/themes", s.createTheme)
 	protected.HandleFunc("PATCH /api/themes/{id}", s.patchTheme)
+	protected.HandleFunc("POST /api/themes/{id}/move", s.moveTheme)
 	protected.HandleFunc("DELETE /api/themes/{id}", s.deleteTheme)
 	protected.HandleFunc("POST /api/themes/{id}/sources", s.bindThemeSource)
 	protected.HandleFunc("DELETE /api/themes/{id}/sources", s.unbindThemeSource)

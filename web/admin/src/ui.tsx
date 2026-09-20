@@ -332,6 +332,8 @@ export type IconName =
   | "external"
   | "search"
   | "chevron"
+  | "up"
+  | "down"
   | "minus";
 
 const iconPaths: Record<IconName, string> = {
@@ -352,6 +354,8 @@ const iconPaths: Record<IconName, string> = {
   external: "M10 4h10v10M20 4L10 14M4 10v10h10",
   search: "M11 5a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM20 20l-4-4",
   chevron: "M8 10l4 4 4-4",
+  up: "M8 14l4-4 4 4",
+  down: "M8 10l4 4 4-4",
   minus: "M6 12h12",
 };
 
