@@ -1,56 +1,40 @@
-# 部署：docker compose up -d（拉预构建镜像，服务器无需 build）
-# 本地改代码：docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
-
 services:
-  ntfy:
-    image: binwiederhier/ntfy:latest
-    container_name: ntfy
+  postgres:
+    image: postgres:16-alpine
+    container_name: nexa-postgres
     restart: unless-stopped
-    command: ["serve"]
+    environment:
+      POSTGRES_USER: nexa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: nexa
     ports:
-      - "127.0.0.1:2586:80"
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexa"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
     volumes:
-      - ./ntfy/cache:/var/cache/ntfy
-      - ./ntfy/etc:/etc/ntfy
-      - ./ntfy/data:/var/lib/ntfy
+      - ./data/postgres:/var/lib/postgresql/data
 
-  ntfy-init:
-    image: binwiederhier/ntfy:latest
-    container_name: ntfy-init
-    restart: "no"
-    depends_on:
-      - ntfy
-    volumes:
-      - ./ntfy/cache:/var/cache/ntfy
-      - ./ntfy/etc:/etc/ntfy
-      - ./ntfy/data:/var/lib/ntfy
-      - ./ntfy:/ntfy-host
-      - ./config:/config
-      - ./deploy/ntfy-init.sh:/ntfy-init.sh:ro
-    entrypoint: ["/bin/sh", "/ntfy-init.sh"]
-
-  bot:
+  server:
     image: ${NEXA_IMAGE:-ghcr.io/kiteyuan/nexapulsebot:latest}
     container_name: nexapulsebot
     restart: unless-stopped
     depends_on:
-      ntfy:
-        condition: service_started
-      ntfy-init:
-        condition: service_completed_successfully
-    env_file:
-      - path: ./ntfy/bot.env
-        required: false
+      postgres:
+        condition: service_healthy
     environment:
-      - PYTHONUNBUFFERED=1
-      - NEXA_NTFY_BASE_URL=http://ntfy:80
-      - NTFY_AUTH_FILE=/var/lib/ntfy/user.db
+      DATABASE_URL: postgres://nexa:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/nexa?sslmode=disable
+      NEXA_ADMIN_TOKEN: ${NEXA_ADMIN_TOKEN:?set NEXA_ADMIN_TOKEN in .env}
+      NEXA_IMAGE_BASE_URL: ${NEXA_IMAGE_BASE_URL:-https://image.kiteyuan.info}
+      NEXA_IMAGE_AUTH: ${NEXA_IMAGE_AUTH:-}
+      # Listen on all interfaces inside the container so host port mapping works.
+      # Host side MUST stay 127.0.0.1:8081 — never publish Admin as 0.0.0.0:8081.
+      NEXA_PUBLIC_ADDR: ":8080"
+      NEXA_ADMIN_ADDR: ":8081"
+    ports:
+      - "8080:8080"
+      - "127.0.0.1:8081:8081"
     volumes:
-      - ./config:/app/config
-      - ./data:/app/data
-      - ./sessions:/app/sessions
-      # Shared with ntfy service so CLI menu can manage topic ACL
-      - ./ntfy/data:/var/lib/ntfy
-      - ./ntfy/etc:/etc/ntfy:ro
-    entrypoint: ["/bin/sh", "/app/bot-entrypoint.sh"]
-    command: ["python", "-m", "nexa.cli", "run"]
+      - ./data/sessions:/app/data/sessions

@@ -1,123 +1,45 @@
-# NexaPulseBot
-
-[![Docker](https://img.shields.io/badge/ghcr.io-kiteyuan%2Fnexapulsebot-blue?logo=docker)](https://github.com/kiteyuan/NexaPulseBot/pkgs/container/nexapulsebot)
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+# NexaPulse
 
 **English** | [简体中文](./README.zh-CN.md)
 
-Telegram channel monitor → rules / optional LLM review → **self-hosted [ntfy](https://ntfy.sh)** push.  
-CLI-only operations. No web admin UI.
+Self-hosted news pipeline: Telegram / RSS ingest, rule filters, optional LLM cleanup, and a public reading site.
 
-```text
-Telegram  ──poll──►  SQLite  ──filter / LLM──►  ntfy topics  ──►  phone / desktop
-```
+- **Server**: Go
+- **Database**: PostgreSQL
+- **Admin**: React + TypeScript on host `127.0.0.1:8081` (never publish Admin to `0.0.0.0`)
+- **Public**: React + TypeScript on `:8080`
 
-## Features
-
-- **Periodic Telegram ingest** — enabled by assigning channels to ntfy topics
-- **Dedup & filters** — hash dedup, min length, block keywords
-- **LLM gate** — approve / reject, notification title + cleaned body in one call
-- **Multi-topic ntfy** — catalog, assign, disable / enable, delete
-- **Image posts** — native ntfy uploads (inline preview); multi-image albums supported
-- **Docker-first** — pull `ghcr.io/kiteyuan/nexapulsebot`, compose brings up ntfy + bot
-
-## Quick start (Docker Compose)
-
-Minimal files on the server: `docker-compose.yml`, `deploy/`, `ntfy/etc/server.yml.example`.
+## Quick start
 
 ```bash
-mkdir -p config data/media sessions ntfy/cache ntfy/etc ntfy/data
-cp -n ntfy/etc/server.yml.example ntfy/etc/ 2>/dev/null || true
+cp .env.example .env
+# Set real NEXA_ADMIN_TOKEN (≥24 chars) and POSTGRES_PASSWORD.
+# Example placeholders are rejected at startup.
 
-docker compose pull
-docker compose up -d
-```
-
-What happens on first boot:
-
-| Service | Role |
-|---------|------|
-| `ntfy` | Self-hosted push server (`127.0.0.1:2586`) |
-| `ntfy-init` | Creates admin user, token → `ntfy/bot.env`, `ntfy/credentials.txt` |
-| `bot` | Generates `config/settings.json` if missing, then runs the worker |
-
-```bash
-# Interactive menu (Telegram / topics / LLM)
-# While bot is running:
-docker compose exec bot python -m nexa.cli
-# After `docker compose stop bot` (login/sync needs exclusive session):
-docker compose run --rm --no-deps bot python -m nexa.cli
-
-# Update bot image
-docker compose pull bot && docker compose up -d bot
-
-# Stop
-docker compose down
-```
-
-> Put the GHCR package **Public**, or `docker login ghcr.io` on the server.  
-> Override image: `NEXA_IMAGE=ghcr.io/kiteyuan/nexapulsebot:latest`.
-
-Edit `ntfy/etc/server.yml` (`base-url`) for your public domain behind a reverse proxy.
-
-## Architecture
-
-```text
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Telegram   │────►│  NexaPulse   │────►│    ntfy     │
-│  channels   │     │  bot + SQLite│     │  (topics)   │
-└─────────────┘     └──────────────┘     └─────────────┘
-                           │
-                    config/settings.json
-                    sessions/  data/
-```
-
-**Topic model:** a channel is active only when assigned to an ntfy topic.  
-Disable a topic to pause poll/push without unbinding channels; delete removes the topic and bindings.
-
-## Configuration
-
-| Location | Purpose |
-|----------|---------|
-| `config/settings.json` | LLM, ntfy token/topics, filters (volume; not baked into image) |
-| `data/nexa.db` | Accounts, channels, message queue, logs |
-| `sessions/` | Telethon login sessions |
-| `ntfy/` | ntfy config, auth DB, credentials |
-
-Typical menu flow:
-
-1. **Telegram account** — add + QR login *(stop competing session locks: avoid sync/login while another process holds the same `.session`)*  
-2. **Telegram channels** — sync list  
-3. **ntfy topics** — add topic → assign channels  
-4. **LLM** — optional review settings  
-5. Subscribe the same topic names in the ntfy app
-
-## Local build / development
-
-```bash
-# Build image locally instead of pulling
+mkdir -p data/sessions
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
-
-# Run without Docker
-python -m venv .venv && source .venv/bin/activate   # Windows: Scripts\activate
-pip install -r requirements.txt
-python -m nexa.cli          # menu
-python -m nexa.cli run      # workers
 ```
 
-Images are published by GitHub Actions on `main` / `v*` tags (`linux/amd64`, `linux/arm64`).
+- Public site: `http://127.0.0.1:8080`
+- Admin UI: `http://127.0.0.1:8081` with `NEXA_ADMIN_TOKEN`
 
-## Project layout
+Or pull a prebuilt image:
 
-```text
-nexa/           Application code (telegram, llm, ntfy, cli)
-config/         settings example + runtime settings.json
-deploy/         compose entrypoint & ntfy-init scripts
-ntfy/           Self-hosted ntfy volumes
-data/           SQLite + media
-sessions/       Telegram sessions
+```bash
+docker pull ghcr.io/kiteyuan/nexapulsebot:latest
 ```
+
+Set `NEXA_IMAGE=ghcr.io/kiteyuan/nexapulsebot:latest` and run `docker compose up -d` (build overlay not required).
+
+## Security notes
+
+- Never commit `.env`, Telegram sessions under `data/sessions/`, or Postgres data.
+- Inside Docker, Admin listens on `:8081` so port mapping works; compose publishes **only** `127.0.0.1:8081:8081`. Do not change that to `0.0.0.0:8081`.
+- Put a reverse proxy with HTTPS in front of Public `:8080` for internet exposure.
+- `NEXA_IMAGE_BASE_URL` defaults to a public image host example; set your own bed and keep `NEXA_IMAGE_AUTH` out of git.
+- Telethon `.session` files cannot be reused. Log in again from the admin UI.
+
+See [简体中文](./README.zh-CN.md) for layout and development notes.
 
 ## License
 

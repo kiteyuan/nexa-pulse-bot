@@ -1,9 +1,10 @@
-name: Publish Docker image
+name: CI
 
 on:
   push:
     branches: [main, master]
     tags: ["v*"]
+  pull_request:
   workflow_dispatch:
 
 env:
@@ -11,7 +12,50 @@ env:
   IMAGE_NAME: kiteyuan/nexapulsebot
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Test
+        run: go test ./...
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Vet
+        run: go vet ./...
+      - uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.1.6
+
+  frontend:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [admin, public]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/${{ matrix.app }}/package-lock.json
+      - name: Build ${{ matrix.app }}
+        working-directory: web/${{ matrix.app }}
+        run: |
+          npm ci
+          npm run build
+
   build-and-push:
+    if: github.event_name != 'pull_request'
+    needs: [test, lint, frontend]
     runs-on: ubuntu-latest
     permissions:
       contents: read
