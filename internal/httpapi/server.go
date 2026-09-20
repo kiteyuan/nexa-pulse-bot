@@ -42,7 +42,7 @@ func (s *Server) PublicHandler() http.Handler {
 	} else {
 		mux.Handle("/", spa(s.Public))
 	}
-	return secure(mux, s.Cfg.ImageBaseURL)
+	return secure(mux, s.Cfg.ImageBaseURL, false)
 }
 
 func (s *Server) AdminHandler() http.Handler {
@@ -81,7 +81,7 @@ func (s *Server) AdminHandler() http.Handler {
 	} else {
 		mux.Handle("/", spa(s.Admin))
 	}
-	return secure(mux, "")
+	return secure(mux, "", true)
 }
 
 func devPage(where string) http.HandlerFunc {
@@ -121,8 +121,11 @@ func (s *Server) auth(next http.Handler) http.Handler {
 	})
 }
 
-func secure(next http.Handler, imageBase string) http.Handler {
+func secure(next http.Handler, imageBase string, allowDataImages bool) http.Handler {
 	img := "'self'"
+	if allowDataImages {
+		img += " data:"
+	}
 	if u, err := url.Parse(strings.TrimSpace(imageBase)); err == nil && (u.Scheme == "https" || u.Scheme == "http") && u.Host != "" {
 		img += " " + u.Scheme + "://" + u.Host
 	}
