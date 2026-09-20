@@ -21,7 +21,7 @@ type Route = { view: "home" } | { view: "theme"; slug: string };
 const HOME_BATCH = 5;
 const THEME_PER = 48;
 const LIST_MAX_REM = 18;
-const LIST_MIN_REM = 8;
+const LIST_MIN_REM = 12;
 
 function randomListMax() {
   const rem = LIST_MIN_REM + Math.random() * (LIST_MAX_REM - LIST_MIN_REM);
