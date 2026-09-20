@@ -20,6 +20,13 @@ type Route = { view: "home" } | { view: "theme"; slug: string };
 
 const HOME_BATCH = 5;
 const THEME_PER = 48;
+const LIST_MAX_REM = 18;
+const LIST_MIN_REM = 8;
+
+function randomListMax() {
+  const rem = LIST_MIN_REM + Math.random() * (LIST_MAX_REM - LIST_MIN_REM);
+  return `${rem.toFixed(2)}rem`;
+}
 
 function formatTime(raw: string) {
   const d = new Date(raw);
@@ -296,6 +303,7 @@ function HomePage({ sections, onOpen }: { sections: Section[]; onOpen: (item: It
 
 function HotPanel({ section, onOpen }: { section: Section; onOpen: (item: Item) => void }) {
   const listRef = useRef<HTMLOListElement>(null);
+  const [listMax] = useState(randomListMax);
   const [shown, setShown] = useState(() => Math.min(HOME_BATCH, section.items.length));
   const visible = section.items.slice(0, shown);
   const hasMore = shown < section.items.length;
@@ -332,7 +340,7 @@ function HotPanel({ section, onOpen }: { section: Section; onOpen: (item: Item) 
           更多
         </button>
       </header>
-      <ol ref={listRef} className="hot-list" onScroll={onScroll}>
+      <ol ref={listRef} className="hot-list" style={{ maxHeight: listMax }} onScroll={onScroll}>
         {visible.map((item, i) => (
           <li key={`${section.key}-${item.id}`}>
             <button type="button" className="hot-row" onClick={() => onOpen(item)}>
@@ -433,52 +441,16 @@ function Card({ item, onOpen }: { item: Item; onOpen: () => void }) {
 
 function Detail({ item, onClose }: { item: Item; onClose: () => void }) {
   useEffect(() => {
-    const y = window.scrollY;
     const { body, documentElement: html } = document;
     const prev = {
       overflow: body.style.overflow,
       htmlOverflow: html.style.overflow,
-      position: body.style.position,
-      top: body.style.top,
-      width: body.style.width,
     };
     html.style.overflow = "hidden";
     body.style.overflow = "hidden";
-    body.style.position = "fixed";
-    body.style.top = `-${y}px`;
-    body.style.width = "100%";
-
-    const sheetCanScroll = (e: Event) => {
-      const sheet = document.querySelector(".sheet");
-      if (!(sheet instanceof HTMLElement) || !sheet.contains(e.target as Node)) {
-        return false;
-      }
-      if (!(e instanceof WheelEvent) || e.deltaY === 0) {
-        return e instanceof TouchEvent;
-      }
-      const max = sheet.scrollHeight - sheet.clientHeight;
-      if (e.deltaY < 0) {
-        return sheet.scrollTop > 0;
-      }
-      return sheet.scrollTop < max - 1;
-    };
-    const blockBackgroundScroll = (e: Event) => {
-      if (!sheetCanScroll(e)) {
-        e.preventDefault();
-      }
-    };
-    document.addEventListener("wheel", blockBackgroundScroll, { capture: true, passive: false });
-    document.addEventListener("touchmove", blockBackgroundScroll, { capture: true, passive: false });
-
     return () => {
-      document.removeEventListener("wheel", blockBackgroundScroll, { capture: true });
-      document.removeEventListener("touchmove", blockBackgroundScroll, { capture: true });
       body.style.overflow = prev.overflow;
       html.style.overflow = prev.htmlOverflow;
-      body.style.position = prev.position;
-      body.style.top = prev.top;
-      body.style.width = prev.width;
-      window.scrollTo(0, y);
     };
   }, []);
 
