@@ -461,16 +461,6 @@ function Detail({ item, onClose }: { item: Item; onClose: () => void }) {
   return (
     <div className="veil" role="presentation" onClick={onClose}>
       <article className="sheet" role="dialog" aria-label={item.title} onClick={(e) => e.stopPropagation()}>
-        <header className="sheet-head">
-          <p className="meta">
-            {item.source || "来源"}
-            {item.themes?.length ? ` · ${item.themes.map((t) => t.name).join("、")}` : ""}
-            {item.created_at ? ` · ${formatTime(item.created_at)}` : ""}
-          </p>
-          <button type="button" className="x" onClick={onClose} aria-label="关闭">
-            ×
-          </button>
-        </header>
         <h2>{item.title}</h2>
         {item.link && (
           <p className="sheet-link">
@@ -483,6 +473,11 @@ function Detail({ item, onClose }: { item: Item; onClose: () => void }) {
           <img key={p} src={p} alt="" />
         ))}
         <div className="body">{item.content}</div>
+        <p className="meta">
+          {item.source || "来源"}
+          {item.themes?.length ? ` · ${item.themes.map((t) => t.name).join("、")}` : ""}
+          {item.created_at ? ` · ${formatTime(item.created_at)}` : ""}
+        </p>
       </article>
     </div>
   );
