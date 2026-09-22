@@ -237,6 +237,18 @@ function hotColumnCount() {
   return 3;
 }
 
+function useMobileHome() {
+  const [mobile, setMobile] = useState(() => window.innerWidth <= 560);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 560px)");
+    const apply = () => setMobile(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  return mobile;
+}
+
 /** 列表最高约 8 行，用来把下一张卡片放进当前最短的列。 */
 function packColumns(sections: Section[], cols: number): Section[][] {
   const buckets: Section[][] = Array.from({ length: cols }, () => []);
@@ -255,6 +267,7 @@ function packColumns(sections: Section[], cols: number): Section[][] {
 }
 
 function HomePage({ sections, onOpen }: { sections: Section[]; onOpen: (item: Item) => void }) {
+  const mobile = useMobileHome();
   const [cols, setCols] = useState(hotColumnCount);
   useEffect(() => {
     const apply = () => setCols(hotColumnCount());
@@ -292,7 +305,7 @@ function HomePage({ sections, onOpen }: { sections: Section[]; onOpen: (item: It
         {columns.map((col, i) => (
           <div className="hot-col" key={i}>
             {col.map((sec) => (
-              <HotPanel key={sec.key} section={sec} onOpen={onOpen} />
+              <HotPanel key={sec.key} section={sec} onOpen={onOpen} compact={mobile} />
             ))}
           </div>
         ))}
@@ -301,18 +314,29 @@ function HomePage({ sections, onOpen }: { sections: Section[]; onOpen: (item: It
   );
 }
 
-function HotPanel({ section, onOpen }: { section: Section; onOpen: (item: Item) => void }) {
+function HotPanel({
+  section,
+  onOpen,
+  compact,
+}: {
+  section: Section;
+  onOpen: (item: Item) => void;
+  compact: boolean;
+}) {
   const listRef = useRef<HTMLOListElement>(null);
   const [listMax] = useState(randomListMax);
   const [shown, setShown] = useState(() => Math.min(HOME_BATCH, section.items.length));
   const visible = section.items.slice(0, shown);
-  const hasMore = shown < section.items.length;
+  const hasMore = !compact && shown < section.items.length;
 
   useEffect(() => {
     setShown(Math.min(HOME_BATCH, section.items.length));
-  }, [section.key, section.items.length]);
+  }, [section.key, section.items.length, compact]);
 
   useEffect(() => {
+    if (compact) {
+      return;
+    }
     const el = listRef.current;
     if (!el || !hasMore) {
       return;
@@ -320,7 +344,7 @@ function HotPanel({ section, onOpen }: { section: Section; onOpen: (item: Item) 
     if (el.scrollHeight <= el.clientHeight + 4) {
       setShown((n) => Math.min(n + HOME_BATCH, section.items.length));
     }
-  }, [shown, hasMore, section.items.length, visible.length]);
+  }, [shown, hasMore, section.items.length, visible.length, compact]);
 
   const onScroll = (e: UIEvent<HTMLOListElement>) => {
     if (!hasMore) {
@@ -340,7 +364,12 @@ function HotPanel({ section, onOpen }: { section: Section; onOpen: (item: Item) 
           更多
         </button>
       </header>
-      <ol ref={listRef} className="hot-list" style={{ maxHeight: listMax }} onScroll={onScroll}>
+      <ol
+        ref={listRef}
+        className="hot-list"
+        style={compact ? undefined : { maxHeight: listMax }}
+        onScroll={compact ? undefined : onScroll}
+      >
         {visible.map((item, i) => (
           <li key={`${section.key}-${item.id}`}>
             <button type="button" className="hot-row" onClick={() => onOpen(item)}>

@@ -67,6 +67,15 @@ button { cursor: pointer; }
   letter-spacing: -0.02em;
   font-weight: 700;
 }
+.home-hero,
+.theme-hero {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  padding: 0.85rem 0 1rem;
+  margin-bottom: 1.1rem;
+}
 .home-hero {
   display: flex;
   align-items: center;
@@ -106,9 +115,6 @@ button { cursor: pointer; }
   font-size: 0.95rem;
 }
 
-.theme-hero {
-  margin-bottom: 1.6rem;
-}
 .theme-hero h1 {
   margin-top: 0.35rem;
   font-size: clamp(1.55rem, 3.5vw, 2rem);
@@ -395,4 +401,8 @@ button { cursor: pointer; }
 @media (max-width: 560px) {
   .page { padding: 1.25rem 1rem 3rem; }
   .fall { column-count: 1; }
+  .hot-list {
+    max-height: none !important;
+    overflow: visible;
+  }
 }
