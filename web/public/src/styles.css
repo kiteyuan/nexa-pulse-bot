@@ -354,7 +354,7 @@ button { cursor: pointer; }
   overscroll-behavior: contain;
   background: var(--paper);
   border-radius: 12px;
-  padding: 1.1rem 1.2rem 1.5rem;
+  padding: 1.2rem 1.2rem 1.5rem;
 }
 .sheet h2 {
   margin: 0 0 0.7rem;

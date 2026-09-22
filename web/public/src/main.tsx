@@ -378,7 +378,6 @@ function ThemePage({ section, onOpen }: { section: Section | null; onOpen: (item
           ← 全部栏目
         </button>
         <h1>{section.name}</h1>
-        <p>{section.total} 条精选</p>
       </header>
 
       <div className="board">
