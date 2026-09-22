@@ -469,10 +469,10 @@ function Detail({ item, onClose }: { item: Item; onClose: () => void }) {
             </a>
           </p>
         )}
+        <div className="body">{item.content}</div>
         {item.media_paths?.map((p) => (
           <img key={p} src={p} alt="" />
         ))}
-        <div className="body">{item.content}</div>
         <p className="meta">
           {item.source || "来源"}
           {item.themes?.length ? ` · ${item.themes.map((t) => t.name).join("、")}` : ""}

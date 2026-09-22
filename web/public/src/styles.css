@@ -349,7 +349,7 @@ button { cursor: pointer; }
 }
 .sheet {
   width: min(640px, 100%);
-  max-height: min(88vh, 900px, calc(100dvh - 2.4rem));
+  max-height: min(72vh, 640px, calc(100dvh - 3rem));
   overflow: auto;
   overscroll-behavior: contain;
   background: var(--paper);
@@ -375,12 +375,15 @@ button { cursor: pointer; }
   display: block;
   width: 100%;
   border-radius: 8px;
-  margin: 0.5rem 0;
+  margin: 0.9rem 0 0;
 }
 .sheet .body {
   white-space: pre-wrap;
   line-height: 1.7;
   font-size: 1.02rem;
+}
+.sheet .body + img {
+  margin-top: 1rem;
 }
 .sheet .meta {
   margin: 1rem 0 0;
