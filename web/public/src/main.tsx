@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useMemo, useRef, useState, type ReactNode, type UIEvent } from "react";
+import { StrictMode, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 
@@ -20,12 +20,11 @@ type Route = { view: "home" } | { view: "theme"; slug: string };
 
 const HOME_BATCH = 5;
 const THEME_PER = 48;
-const LIST_MAX_REM = 18;
-const LIST_MIN_REM = 12;
+const LIST_MAX_ITEMS = 8;
+const LIST_MIN_ITEMS = 4;
 
-function randomListMax() {
-  const rem = LIST_MIN_REM + Math.random() * (LIST_MAX_REM - LIST_MIN_REM);
-  return `${rem.toFixed(2)}rem`;
+function randomListCount() {
+  return LIST_MIN_ITEMS + Math.floor(Math.random() * (LIST_MAX_ITEMS - LIST_MIN_ITEMS + 1));
 }
 
 function formatTime(raw: string) {
@@ -166,7 +165,7 @@ function App() {
 
   useEffect(() => {
     setCurrent(null);
-    window.scrollTo(0, 0);
+    document.querySelector(".board")?.scrollTo(0, 0);
   }, [route]);
 
   useEffect(() => {
@@ -202,10 +201,14 @@ function App() {
   if (err) {
     return (
       <div className="page">
-        <header className="hero">
-          <h1>NexaPulse</h1>
+        <header className="hero home-hero">
+          <div className="brand">
+            <h1>NexaPulse</h1>
+          </div>
         </header>
-        <p className="banner">{err}</p>
+        <div className="board">
+          <p className="banner">{err}</p>
+        </div>
       </div>
     );
   }
@@ -301,14 +304,16 @@ function HomePage({ sections, onOpen }: { sections: Section[]; onOpen: (item: It
 
       {sections.length === 0 && <p className="banner">还没有内容</p>}
 
-      <div className="hot-fall">
-        {columns.map((col, i) => (
-          <div className="hot-col" key={i}>
-            {col.map((sec) => (
-              <HotPanel key={sec.key} section={sec} onOpen={onOpen} compact={mobile} />
-            ))}
-          </div>
-        ))}
+      <div className="board">
+        <div className="hot-fall">
+          {columns.map((col, i) => (
+            <div className="hot-col" key={i}>
+              {col.map((sec) => (
+                <HotPanel key={sec.key} section={sec} onOpen={onOpen} compact={mobile} />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -323,38 +328,9 @@ function HotPanel({
   onOpen: (item: Item) => void;
   compact: boolean;
 }) {
-  const listRef = useRef<HTMLOListElement>(null);
-  const [listMax] = useState(randomListMax);
-  const [shown, setShown] = useState(() => Math.min(HOME_BATCH, section.items.length));
-  const visible = section.items.slice(0, shown);
-  const hasMore = !compact && shown < section.items.length;
-
-  useEffect(() => {
-    setShown(Math.min(HOME_BATCH, section.items.length));
-  }, [section.key, section.items.length, compact]);
-
-  useEffect(() => {
-    if (compact) {
-      return;
-    }
-    const el = listRef.current;
-    if (!el || !hasMore) {
-      return;
-    }
-    if (el.scrollHeight <= el.clientHeight + 4) {
-      setShown((n) => Math.min(n + HOME_BATCH, section.items.length));
-    }
-  }, [shown, hasMore, section.items.length, visible.length, compact]);
-
-  const onScroll = (e: UIEvent<HTMLOListElement>) => {
-    if (!hasMore) {
-      return;
-    }
-    const el = e.currentTarget;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight <= 32) {
-      setShown((n) => Math.min(n + HOME_BATCH, section.items.length));
-    }
-  };
+  const [desktopLimit] = useState(randomListCount);
+  const limit = compact ? HOME_BATCH : desktopLimit;
+  const visible = section.items.slice(0, Math.min(limit, section.items.length));
 
   return (
     <section className="hot">
@@ -364,12 +340,7 @@ function HotPanel({
           更多
         </button>
       </header>
-      <ol
-        ref={listRef}
-        className="hot-list"
-        style={compact ? undefined : { maxHeight: listMax }}
-        onScroll={compact ? undefined : onScroll}
-      >
+      <ol className="hot-list">
         {visible.map((item, i) => (
           <li key={`${section.key}-${item.id}`}>
             <button type="button" className="hot-row" onClick={() => onOpen(item)}>
@@ -393,7 +364,9 @@ function ThemePage({ section, onOpen }: { section: Section | null; onOpen: (item
           </button>
           <h1>栏目不存在</h1>
         </header>
-        <p className="banner">该栏目暂无内容，或链接已失效。</p>
+        <div className="board">
+          <p className="banner">该栏目暂无内容，或链接已失效。</p>
+        </div>
       </div>
     );
   }
@@ -408,10 +381,12 @@ function ThemePage({ section, onOpen }: { section: Section | null; onOpen: (item
         <p>{section.total} 条精选</p>
       </header>
 
-      <div className="fall">
-        {section.items.map((item) => (
-          <Card key={item.id} item={item} onOpen={() => onOpen(item)} />
-        ))}
+      <div className="board">
+        <div className="fall">
+          {section.items.map((item) => (
+            <Card key={item.id} item={item} onOpen={() => onOpen(item)} />
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -12,7 +12,14 @@
   color: var(--ink);
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; }
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+#root {
+  height: 100%;
+}
 html {
   scrollbar-width: none;
 }
@@ -55,11 +62,16 @@ button { cursor: pointer; }
 .page {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 1.6rem 1.25rem 3.5rem;
+  height: 100%;
+  padding: 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .hero {
-  margin-bottom: 1.4rem;
+  flex-shrink: 0;
 }
 .hero h1 {
   margin: 0;
@@ -69,12 +81,8 @@ button { cursor: pointer; }
 }
 .home-hero,
 .theme-hero {
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  padding: 1.2rem 0 1rem;
   background: var(--bg);
-  padding: 0.85rem 0 1rem;
-  margin-bottom: 1.1rem;
 }
 .home-hero {
   display: flex;
@@ -136,6 +144,21 @@ button { cursor: pointer; }
 .banner {
   color: var(--mute);
   margin: 0 0 1.5rem;
+  flex-shrink: 0;
+}
+
+.board {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 2.5rem;
+  scrollbar-width: none;
+}
+.board::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .loading {
@@ -195,16 +218,6 @@ button { cursor: pointer; }
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 18rem;
-  overflow-y: scroll;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.hot-list::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
 }
 .hot-row {
   display: grid;
@@ -399,10 +412,6 @@ button { cursor: pointer; }
   .fall { column-count: 2; }
 }
 @media (max-width: 560px) {
-  .page { padding: 1.25rem 1rem 3rem; }
+  .page { padding: 0 1rem; }
   .fall { column-count: 1; }
-  .hot-list {
-    max-height: none !important;
-    overflow: visible;
-  }
 }
