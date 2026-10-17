@@ -123,9 +123,61 @@ button { cursor: pointer; }
   font-size: 0.95rem;
 }
 
+.theme-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
 .theme-hero h1 {
   margin-top: 0.35rem;
   font-size: clamp(1.55rem, 3.5vw, 2rem);
+}
+.theme-title h1 {
+  margin-top: 0;
+  min-width: 0;
+}
+.rss-copy {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+.rss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+}
+.rss svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+}
+.rss:hover { color: var(--accent); }
+.rss-note {
+  color: var(--mute);
+  font-size: 0.82rem;
+}
+.rss-url {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  margin: 0;
+  width: min(70vw, 28rem);
+  color: var(--mute);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-align: right;
+  word-break: break-all;
+  user-select: all;
 }
 .back,
 .more {

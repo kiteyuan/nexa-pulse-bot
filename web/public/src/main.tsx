@@ -377,7 +377,10 @@ function ThemePage({ section, onOpen }: { section: Section | null; onOpen: (item
         <button type="button" className="back" onClick={goHome}>
           ← 全部栏目
         </button>
-        <h1>{section.name}</h1>
+        <div className="theme-title">
+          <h1>{section.name}</h1>
+          <ThemeFeedCopy slug={section.key} />
+        </div>
       </header>
 
       <div className="board">
@@ -387,6 +390,53 @@ function ThemePage({ section, onOpen }: { section: Section | null; onOpen: (item
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function themeFeedURL(slug: string) {
+  return `${window.location.origin}/rss.xml?theme=${encodeURIComponent(slug)}`;
+}
+
+function ThemeFeedCopy({ slug }: { slug: string }) {
+  const url = themeFeedURL(slug);
+  const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!copied) {
+      return;
+    }
+    const timer = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setFailed(false);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+      setFailed(true);
+    }
+  };
+
+  return (
+    <div className="rss-copy">
+      {copied && <span className="rss-note">已复制</span>}
+      <button type="button" className="rss" aria-label="复制订阅链接" onClick={() => void onCopy()}>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            d="M6 18a2 2 0 1 0 .01 0M6 10a8 8 0 0 1 8 8M6 5a13 13 0 0 1 13 13"
+          />
+        </svg>
+      </button>
+      {failed && <p className="rss-url">{url}</p>}
     </div>
   );
 }
